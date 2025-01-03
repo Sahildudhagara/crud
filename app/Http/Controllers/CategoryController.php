@@ -18,30 +18,25 @@ class CategoryController extends Controller
     {
         if ($request->ajax()) {
             // Initialize pagination and search parameters
-            $totalData = Category::where('user_id', Auth::id())->count();
-            $totalFiltered = $totalData;
-
             $limit = $request->input('length');
             $start = $request->input('start');
+            $searchTerm = $request->input('search.value', ''); // Get search term if available
 
             // Base query with user-specific filtering
             $categoriesQuery = Category::where('user_id', Auth::id());
 
-            // Search functionality
-            if (!empty($request->input('search.value'))) {
-                $searchTerm = $request->input('search.value');
+            // Apply search functionality if there's a search term
+            if (!empty($searchTerm)) {
                 $categoriesQuery = $categoriesQuery->where(function ($query) use ($searchTerm) {
                     $query->where('name', 'like', '%' . $searchTerm . '%')
-                        ->orWhere('description', 'like', '%' . $searchTerm . '%');
+                          ->orWhere('description', 'like', '%' . $searchTerm . '%');
                 });
-
-                $totalFiltered = Category::where('user_id', Auth::id())->where(function ($query) use ($searchTerm) {
-                    $query->where('name', 'like', '%' . $searchTerm . '%')
-                        ->orWhere('description', 'like', '%' . $searchTerm . '%');
-                })->count();
             }
 
-            // Order functionality (Dynamic order by column and direction)
+            // Get total count for pagination (before applying search or limit)
+            $totalData = Category::where('user_id', Auth::id())->count();
+
+            // Apply ordering
             if ($request->has('order')) {
                 $orderColumnIndex = $request->input('order.0.column'); // index of the column to sort by
                 $orderDirection = $request->input('order.0.dir'); // 'asc' or 'desc'
@@ -54,24 +49,27 @@ class CategoryController extends Controller
                 $categoriesQuery = $categoriesQuery->orderBy($orderByColumn, $orderDirection);
             }
 
-            // Fetch paginated categories
+            // Apply pagination
             $categories = $categoriesQuery->offset($start)->limit($limit)->get();
 
-            // Prepare data for AJAX response
+            // Get the filtered count for pagination
+            $totalFiltered = $categoriesQuery->count();
+
+            // Prepare data for the response
             $data_val = [];
             foreach ($categories as $category) {
                 $data_val[] = [
-                    'id' => $category->id,  // Ensure the 'id' is included
+                    'id' => $category->id,
                     'name' => $category->name,
                     'description' => $category->description,
                     'status' => $category->status == 1 ? 'Visible' : 'Hidden',
                     'created_at' => $category->created_at->format('m-d-Y'),
                     'image' => $category->image ? asset('storage/' . $category->image) : 'https://dummyimage.com/400x200',
-                    'action_buttons' => $this->generateActionButtons($category->id), // Generate action buttons
+                    'action_buttons' => $this->generateActionButtons($category->id),
                 ];
             }
 
-            // Send response as JSON
+            // Return the response as JSON
             return response()->json([
                 'draw' => intval($request->input('draw')),
                 'recordsTotal' => intval($totalData),
