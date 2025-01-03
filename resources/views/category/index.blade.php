@@ -197,7 +197,7 @@
             { data: 'description' },
             { data: 'status' },
             { data: 'image', render: function(data) {
-                return data ? <img src="${data}" width="100"> : 'No Image';
+                return data ? `<img src="${data}" width="100">` : 'No Image';
             }},
             { data: 'action_buttons' }
         ]
