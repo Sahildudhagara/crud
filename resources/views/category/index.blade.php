@@ -188,39 +188,19 @@
         processing: true,
         serverSide: true,
         ajax: {
-            url: '{{ route("category.index") }}'
+            url: '{{ route("category.index") }}',
+            method: 'GET',
         },
         columns: [
             { data: 'id' },
             { data: 'name' },
             { data: 'description' },
-            {
-                data: 'status',
-                render: function(data) {
-                    return data == 1 ? 'Visible' : 'Hidden';
-                }
-            },
-            {
-                data: 'image',
-                render: function(data) {
-                    return data ? `<img src="${data}" width="100">` : 'No Image';
-
-                }
-            },
-            {
-                data: 'id',
-                render: function(data) {
-                    return `
-                        <button class="btn btn-info show-category" data-id="${data}">Show</button>
-                        <button class="btn btn-success edit-category" data-id="${data}">Edit</button>
-                        <button class="btn btn-danger delete-category" data-id="${data}">Delete</button>
-                    `;
-                }
-            }
-        ],
-        drawCallback: function(settings) {
-            $('#pagination').html(settings.oPreviousSearch.sSearch); // Handle pagination
-        }
+            { data: 'status' },
+            { data: 'image', render: function(data) {
+                return data ? <img src="${data}" width="100"> : 'No Image';
+            }},
+            { data: 'action_buttons' }
+        ]
     });
 
     // Listen for search input and update the DataTable
