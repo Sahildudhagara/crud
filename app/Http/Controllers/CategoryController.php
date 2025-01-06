@@ -16,6 +16,7 @@ class CategoryController extends Controller
 
     public function index(Request $request)
     {
+        // Check if it's an AJAX request
         if ($request->ajax()) {
             // Initialize pagination and search parameters
             $limit = $request->input('length');
@@ -26,28 +27,28 @@ class CategoryController extends Controller
             $categoriesQuery = Category::where('user_id', Auth::id());
 
             // Apply search functionality if there's a search term
-            if (!empty($searchTerm)) {
-                $categoriesQuery = $categoriesQuery->where(function ($query) use ($searchTerm) {
+            $categoriesQuery->when(!empty($searchTerm), function ($query) use ($searchTerm) {
+                 $query->where(function ($query) use ($searchTerm) {
                     $query->where('name', 'like', '%' . $searchTerm . '%')
-                          ->orWhere('description', 'like', '%' . $searchTerm . '%');
+                        ->orWhere('description', 'like', '%' . $searchTerm . '%');
                 });
-            }
+            });
 
             // Get total count for pagination (before applying search or limit)
             $totalData = Category::where('user_id', Auth::id())->count();
 
-            // Apply ordering
-            if ($request->has('order')) {
+            // Apply ordering if specified
+            $categoriesQuery->when($request->has('order'), function ($query) use ($request) {
                 $orderColumnIndex = $request->input('order.0.column'); // index of the column to sort by
                 $orderDirection = $request->input('order.0.dir'); // 'asc' or 'desc'
 
-                // Get column name for sorting (can be expanded to include other fields)
+                // Define column names for sorting
                 $columns = ['id', 'name', 'description', 'status', 'created_at'];
                 $orderByColumn = $columns[$orderColumnIndex] ?? 'created_at'; // default to 'created_at'
 
                 // Apply ordering to the query
-                $categoriesQuery = $categoriesQuery->orderBy($orderByColumn, $orderDirection);
-            }
+                $query->orderBy($orderByColumn, $orderDirection);
+            });
 
             // Apply pagination
             $categories = $categoriesQuery->offset($start)->limit($limit)->get();
@@ -56,9 +57,8 @@ class CategoryController extends Controller
             $totalFiltered = $categoriesQuery->count();
 
             // Prepare data for the response
-            $data_val = [];
-            foreach ($categories as $category) {
-                $data_val[] = [
+            $data_val = $categories->map(function ($category) {
+                return [
                     'id' => $category->id,
                     'name' => $category->name,
                     'description' => $category->description,
@@ -67,13 +67,13 @@ class CategoryController extends Controller
                     'image' => $category->image ? asset('storage/' . $category->image) : 'https://dummyimage.com/400x200',
                     'action_buttons' => $this->generateActionButtons($category->id),
                 ];
-            }
+            });
 
             // Return the response as JSON
             return response()->json([
-                'draw' => intval($request->input('draw')),
-                'recordsTotal' => intval($totalData),
-                'recordsFiltered' => intval($totalFiltered),
+                'draw' => (int) $request->input('draw'),
+                'recordsTotal' => (int) $totalData,
+                'recordsFiltered' => (int) $totalFiltered,
                 'data' => $data_val,
             ]);
         }
@@ -82,9 +82,10 @@ class CategoryController extends Controller
         $categories = Category::where('user_id', Auth::id())->paginate(10);
         return view('category.index', [
             'categories' => $categories,
-            'userEmail' => Auth::user()->email
+            'userEmail' => Auth::user()->email,
         ]);
     }
+
 
     // Function to generate action buttons
     private function generateActionButtons($categoryId)
