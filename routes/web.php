@@ -27,7 +27,7 @@ Route::get('/deshbord',[DeshbordController::class,'index'])->name('deshbord');
 
 Route::get('/register',[LoginController::class,'register'])->name('register');
 Route::post('/process-register',[LoginController::class,'processRegister'])->name('processRegister');
-
+Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
 
 //Route::resource('category', CategoryController::class)->middleware('auth');
 
@@ -37,5 +37,5 @@ Route::middleware(['auth'])->group(function () {
 });
 
 
-Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
+
 

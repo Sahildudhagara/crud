@@ -28,7 +28,7 @@ class CategoryController extends Controller
 
             // Apply search functionality if there's a search term
             $categoriesQuery->when(!empty($searchTerm), function ($query) use ($searchTerm) {
-                 $query->where(function ($query) use ($searchTerm) {
+                  $query->where(function ($query) use ($searchTerm) {
                     $query->where('name', 'like', '%' . $searchTerm . '%')
                         ->orWhere('description', 'like', '%' . $searchTerm . '%');
                 });
